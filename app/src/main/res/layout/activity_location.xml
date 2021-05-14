@@ -9,13 +9,13 @@
     tools:context=".LocationActivity">
 
     <EditText
-        android:id="@+id/etName"
+        android:id="@+id/edit_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:inputType="text"
         android:textSize="18sp"
         android:hint="The place that you will visit in the future"
-        android:drawableLeft="@drawable/ic_action_direction"
+        android:drawableLeft="@drawable/ic_direction"
         />
 
     <LinearLayout
@@ -28,23 +28,23 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginEnd="7.5dp"
-            android:onClick="addLocation"
             android:backgroundTint="#c94820"
             android:text="Save"/>
 
         <Button
+            android:id="@+id/btnCancel"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="7.5dp"
             android:layout_alignParentEnd="true"
             android:backgroundTint="#c94820"
-            android:onClick="cancelLocation"
             android:text="Cancel"/>
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent"
+        tools:listitem="@layout/card_item"/>
 </LinearLayout>

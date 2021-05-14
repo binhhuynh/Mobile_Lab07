@@ -4,57 +4,79 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.room.Room;
+import androidx.room.RoomDatabase;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 
 import com.iuh.mobile_lab07.dao.LocationDao;
 import com.iuh.mobile_lab07.db.TravelDatabase;
 import com.iuh.mobile_lab07.entity.Location;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class LocationActivity extends AppCompatActivity {
-    private LocationDao locationDao;
-    private TravelDatabase db;
+    private EditText editText;
+    private Button btnAdd, btnCancel;
     private RecyclerView recyclerView;
 
+    private List<Location> locationList = new ArrayList<>();
+    LinearLayoutManager linearLayoutManager;
+    TravelDatabase database;
+    CustomAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_location);
 
-        db = Room.databaseBuilder(this, TravelDatabase.class, "travelDB")
-                .allowMainThreadQueries().build();
-
-        locationDao = db.locationDao();
-
+        editText = findViewById(R.id.edit_text);
+        btnAdd = findViewById(R.id.btnAdd);
+        btnCancel = findViewById(R.id.btnCancel);
         recyclerView = findViewById(R.id.recycler);
 
-        getDBConnection();
-    }
+        database = TravelDatabase.getInstance(this);
 
-    public void getDBConnection() {
-        List<Location> locations = locationDao.getAll();
+        locationList = database.locationDao().getAll();
 
-        CustomAdapter adapter = new CustomAdapter(locations, locationDao);
+        linearLayoutManager = new LinearLayoutManager(this);
+
+        recyclerView.setLayoutManager(linearLayoutManager);
+
+        adapter = new CustomAdapter(LocationActivity.this, locationList);
 
         recyclerView.setAdapter(adapter);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-    }
 
-    public void addLocation(View view) {
-        Location location = new Location();
-        EditText name = (EditText) findViewById(R.id.etName);
-        location.setName(String.valueOf(name.getText()));
-        locationDao.insert(location);
-        getDBConnection();
-    }
+        btnAdd.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String name = editText.getText().toString().trim();
+                if (!name.equals("")) {
+                    Location location = new Location();
+                    location.setName(name);
+                    database.locationDao().insert(location);
 
-    public void cancelLocation(View view) {
-        EditText name = (EditText) findViewById(R.id.etName);
-        name.getText().clear();
+                    editText.setText("");
+
+                    locationList.clear();
+                    locationList.addAll(database.locationDao().getAll());
+                    adapter.notifyDataSetChanged();
+                }
+            }
+        });
+
+        btnCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                database.locationDao().reset(locationList);
+
+                locationList.clear();
+                locationList.addAll(database.locationDao().getAll());
+                adapter.notifyDataSetChanged();
+            }
+        });
     }
 }

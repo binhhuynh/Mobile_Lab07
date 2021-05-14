@@ -1,9 +1,13 @@
 package com.iuh.mobile_lab07;
 
+import android.app.Activity;
+import android.app.Dialog;
 import android.database.sqlite.SQLiteDatabase;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -22,88 +26,109 @@ import com.iuh.mobile_lab07.entity.Location;
 import java.util.List;
 
 public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder>{
-    private List<Location> locations;
-    private LocationDao locationDao;
-    private Listener listener;
+    private List<Location> locationList;
+    private Activity context;
+    private TravelDatabase database;
 
-    public interface Listener {
-        void onEdit(int p);
-        void onDelete(int p);
+    public CustomAdapter(Activity context, List<Location> locationList) {
+        this.context = context;
+        this.locationList = locationList;
+        notifyDataSetChanged();
     }
 
-
-    public CustomAdapter(List<Location> locations, LocationDao locationDao) {
-        this.locations = locations;
-        this.locationDao = locationDao;
-    }
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        CardView cv = (CardView) LayoutInflater.from(parent.getContext())
+    public CustomAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.card_item, parent, false);
-        ViewHolder viewHolder = new ViewHolder(cv, new Listener() {
+        return new ViewHolder(view);
+    }
 
-            @Override
-            public void onEdit(int p) {
-                Toast toast = Toast.makeText(parent.getContext(), "1", Toast.LENGTH_SHORT);
-                toast.show();
-            }
+    @Override
+    public void onBindViewHolder(@NonNull CustomAdapter.ViewHolder holder, int position) {
+        Location location = locationList.get(position);
 
+        database = TravelDatabase.getInstance(context);
+
+        holder.textViewID.setText(String.valueOf(location.getId()));
+        holder.textViewName.setText(location.getName());
+
+        holder.ibEdit.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onDelete(int p) {
-                TextView location = cv.findViewById(R.id.tvLocation);
-                locationDao.delete(String.valueOf(location.getText()));
+            public void onClick(View v) {
+                Location l = locationList.get(holder.getAdapterPosition());
+
+                int ID = l.getId();
+
+                String name = l.getName();
+
+                Dialog dialog = new Dialog(context);
+
+                dialog.setContentView(R.layout.dialog_update);
+
+                int width = WindowManager.LayoutParams.MATCH_PARENT;
+
+                int height = WindowManager.LayoutParams.WRAP_CONTENT;
+
+                dialog.getWindow().setLayout(width, height);
+
+                dialog.show();
+
+                EditText editText = dialog.findViewById(R.id.edit_text);
+                Button ibUpdate = dialog.findViewById(R.id.btn_update);
+
+                editText.setText(name);
+
+                ibUpdate.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        dialog.dismiss();
+
+                        String uText = editText.getText().toString().trim();
+
+                        database.locationDao().update(ID, uText);
+
+                        locationList.clear();
+                        locationList.addAll(database.locationDao().getAll());
+                        notifyDataSetChanged();
+                    }
+                });
+
+                holder.ibDelete.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Location d = locationList.get(holder.getAdapterPosition());
+
+                        database.locationDao().delete(d);
+
+                        int position = holder.getAdapterPosition();
+                        locationList.remove(position);
+                        notifyItemRemoved(position);
+                        notifyItemRangeChanged(position, locationList.size());
+                    }
+                });
             }
         });
-        return viewHolder;
     }
 
-    @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        CardView cardView = holder.cardView;
-        TextView tvID = (TextView) cardView.findViewById(R.id.tvID);
-        TextView tvLocation = (TextView) cardView.findViewById(R.id.tvLocation);
-        tvID.setText(String.valueOf(locations.get(position).getId()));
-        tvLocation.setText(String.valueOf(locations.get(position).getName()));
-    }
     @Override
     public int getItemCount() {
-        return locations.size();
+        return locationList.size();
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
-        private Listener listener;
-        private CardView cardView;
-        private ImageButton btnEdit;
-        private ImageButton btnDelete;
-        private EditText name;
 
-        public ViewHolder(CardView v, Listener listener) {
-            super(v);
-            cardView = v;
+    public class ViewHolder extends RecyclerView.ViewHolder {
+        TextView textViewID, textViewName;
+        ImageButton ibEdit, ibDelete;
 
-            btnEdit = cardView.findViewById(R.id.ibUpdate);
-            btnDelete = cardView.findViewById(R.id.ibDelete);
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
 
-            this.listener = listener;
-
-            btnEdit.setOnClickListener(this);
-            btnDelete.setOnClickListener(this);
-        }
-
-        @Override
-        public void onClick(View v) {
-            switch (v.getId()) {
-                case R.id.ibUpdate:
-                    listener.onEdit(this.getLayoutPosition());
-                    break;
-                case R.id.ibDelete:
-                    listener.onDelete(this.getLayoutPosition());
-                    break;
-                default:
-                    break;
-            }
+            textViewID = itemView.findViewById(R.id.tvID);
+            textViewName = itemView.findViewById(R.id.tvLocation);
+            ibEdit = itemView.findViewById(R.id.ibUpdate);
+            ibDelete = itemView.findViewById(R.id.ibDelete);
         }
     }
 }
